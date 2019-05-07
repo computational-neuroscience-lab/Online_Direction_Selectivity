@@ -1,33 +1,35 @@
 close all
 clear
 
-% params
-IMG_RATE = 7.82;  % Hz
-BARS_RATE = 50;  % Hz
-SNR_THRESHOLD = 0.7;
+% experimental parameters
+img_rate = 7.82;	% Hz
+bars_rate = 50;     % Hz
+
+% analysis parameters
+blur_factor = 0.8;
+snr_threshold = 0.7;
+ds_threshold = 0.5;
 
 % Available Examples
-exp_ids = ["180326", "180327", "180328", "180329", "180330", "180406", "180410a", "180410b", "180410c", "180411"];
+examples = ["180326", "180327", "180328", "180329", "180330", "180406", "180410a", "180410b", "180410c", "180411"];
 
-for exp_id = exp_ids
-
+for example = examples
+    
     % Files
     bars_vec = "tests/data/stim/bars.vec";
-    tiff_file = strcat("tests/data/tiffs/bars_", exp_id, ".tif");
-    ground_truth_mat = strcat("tests/data/ground_truth/", exp_id, "_boundaries.mat");
+    tiff_file = strcat("tests/data/tiffs/bars_", example, ".tif");
 
     % Plot Direction Selectivity
     tic
-    plot_pixelwise_ds(tiff_file, IMG_RATE, bars_vec, BARS_RATE, SNR_THRESHOLD);
+    plot_pixelwise_ds(tiff_file, img_rate, bars_vec, bars_rate, blur_factor, ds_threshold, snr_threshold);
     fprintf("online DS analysis performed in %f seconds\n", toc);
-    
-    % Load ground truth data
-    load(ground_truth_mat, "boundaries");
 
-    % Plot & compare
+    % Plot & compare with ground truth
+    ground_truth_mat = strcat("tests/data/ground_truth/", example, "_boundaries.mat");
+    load(ground_truth_mat, "boundaries");
     hold on
     for b = boundaries
-        visboundaries(b{:}, 'Color', 'yellow');
+        visboundaries(b{:}, 'Color', "red");
     end
     
     waitforbuttonpress()

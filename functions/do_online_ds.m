@@ -2,20 +2,24 @@
 % Based on the paper from Baden et al. (2016)
 % Author: Francesco Trapani (Institut De la Vision, PARIS)
 
-function [ds_map, snr_map] = do_online_ds(tiff_file, frame_rate, bars_vec, bars_rate)
+function [ds_map, angle_map, snr_map] = do_online_ds(img, frame_rate, bars_vec, bars_rate, blurring_factor)
+% ARGS
+%   tiff_file:  path to the .tiff video of the calcium recording
+%   frame_rate: frame rate of the .tiff video (in Hz)
+%   bars_vec: path to the .vec file representing the bars stimulus
+%   bars_rate: frame rate of the bars stimulus (in Hz)
+%   blurring_factor: sigma of the gaussian kernel convolved to the calcium images
 
 % params
-BLURRING_LEVEL = 0.8;
 MIN_N_FRAMES_BASELINE = 10;
 
 % Load & Filter data
-manip_matrix = extract_from_tiff(tiff_file);
-manip_matrix_blurred = imgaussfilt(manip_matrix, BLURRING_LEVEL);
+img_blurred = imgaussfilt(img, blurring_factor);
 
-[n_rows, n_columns, n_frames_recording] = size(manip_matrix_blurred);
+[n_rows, n_columns, n_frames_recording] = size(img_blurred);
 n_pixels = n_rows * n_columns;
 
-traces = reshape(manip_matrix_blurred, [n_pixels, n_frames_recording]);
+traces = reshape(img_blurred, [n_pixels, n_frames_recording]);
 
 % Get the structure of the bars stim
 [angles, angles_sequence, bar_duration, baseline_duration] = get_bars_infos(bars_vec, bars_rate);
@@ -32,7 +36,7 @@ n_bars_recorded = floor((n_frames_recording - n_frames_baseline) / n_frames_1bar
 if n_bars_recorded >= n_bars
     n_bars_recorded = n_bars;
 else
-    fprintf("WARNING: %i bar repetitions were not recorded", n_bars - n_bars_recorded);
+    fprintf("WARNING: %i bar repetitions were not recorded\n", n_bars - n_bars_recorded);
 end
     
 angles_sequence = angles_sequence(1:n_bars_recorded);
@@ -79,8 +83,8 @@ peaks = max(max(abs(fmean_by_angle), [], 3), [], 2);
 fmean_by_angle_norm = fmean_by_angle ./ peaks;
 
 % compute direction selectivity
-[dsi, ~, directionModules] = compute_dsi(angles, fmean_by_angle_norm);
-[~, preferred_direction] = max(directionModules, [], 2);
+[ds_indices, ds_angle, ds_modules] = compute_dsi(angles, fmean_by_angle_norm);
+[~, preferred_direction] = max(ds_modules, [], 2);
 
 % Just consider signal to noise ratio for the preferred direction
 snr = zeros(1, n_pixels);
@@ -89,5 +93,6 @@ for i_pixel = 1:n_pixels
 end
 
 % reconstruct the ds map
-ds_map = reshape(dsi, [n_rows, n_columns]);
+ds_map = reshape(ds_indices, [n_rows, n_columns]);
+angle_map = reshape(ds_angle, [n_rows, n_columns]);
 snr_map = reshape(snr, [n_rows, n_columns]);

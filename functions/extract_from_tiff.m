@@ -1,7 +1,8 @@
-function output_matrix = extractTiffData(input_file)
+function output_matrix = extract_from_tiff(input_file)
 
 input_file = char(input_file);
 
+warning('off','all')
 stack_info = imfinfo(input_file);
 stack_w = stack_info(1).Width;
 stack_h = stack_info(1).Height;
@@ -15,4 +16,4 @@ for i = 1:stack_n
    output_matrix(:,:,i) = TifLink.read();
 end
 TifLink.close();
-
+warning('on','all')
